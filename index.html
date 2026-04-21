@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GA Job Optimization | Soft Computing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #2c3e50;
+            color: #333;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            text-align: center;
+            color: #8e44ad;
+        }
+
+        .job-card {
+            background: #fdfdfd;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 10px;
+        }
+
+        .job-card>div {
+            flex: 1;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-add {
+            background: #34495e;
+        }
+
+        .btn-run {
+            background: #8e44ad;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .result-box {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f5eef8;
+            border-left: 5px solid #8e44ad;
+            display: none;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Evolutionary Job Optimizer (GA)</h2>
+        <p style="text-align: center; color: #666;">This tool breeds hundreds of schedule permutations using Crossover
+            and Mutation to find the absolute best sequence.</p>
+
+        <div id="jobInputs"></div>
+
+        <div class="btn-group">
+            <button class="btn-add" onclick="addJob()">+ Add Job</button>
+            <button class="btn-run" onclick="optimizeJobs()">Evolve Schedule</button>
+        </div>
+
+        <div id="results" class="result-box">
+            <h3>Fittest Schedule Found</h3>
+            <ol id="scheduleList"></ol>
+        </div>
+    </div>
+
+    <script>
+        let jobCount = 0;
+
+        function addJob() {
+            jobCount++;
+            const div = document.createElement('div');
+            div.className = 'job-card';
+            div.innerHTML = `
+                <div><strong>Job ${jobCount}</strong></div>
+                <div><input type="number" id="time_${jobCount}" placeholder="Processing Time" value="${Math.floor(Math.random() * 20) + 1}"></div>
+                <div><input type="number" id="urgency_${jobCount}" placeholder="Urgency (1-10)" value="${Math.floor(Math.random() * 10) + 1}"></div>
+            `;
+            document.getElementById('jobInputs').appendChild(div);
+        }
+
+        async function optimizeJobs() {
+            const jobs = [];
+            // Memory isn't factored into the current fitness equation, but you can scale the GA later to include it!
+            for (let i = 1; i <= jobCount; i++) {
+                jobs.push({
+                    id: `Job ${i}`,
+                    processing_time: parseFloat(document.getElementById(`time_${i}`).value) || 0,
+                    urgency: parseFloat(document.getElementById(`urgency_${i}`).value) || 0
+                });
+            }
+
+            document.querySelector('.btn-run').innerText = "Evolving...";
+
+            const response = await fetch('/optimize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jobs: jobs })
+            });
+
+            const data = await response.json();
+
+            const list = document.getElementById('scheduleList');
+            list.innerHTML = '';
+            data.optimized_schedule.forEach(job => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${job.job_id}</strong> (Moved from position ${job.original_position})`;
+                list.appendChild(li);
+            });
+            document.getElementById('results').style.display = 'block';
+            document.querySelector('.btn-run').innerText = "Evolve Schedule";
+        }
+
+        // Add 4 random jobs to start
+        for (let i = 0; i < 4; i++) addJob();
+    </script>
+</body>
+
+</html>
